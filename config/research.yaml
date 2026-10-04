@@ -1,0 +1,64 @@
+project_name: "QUANTA"
+research_date: "2026-10-04"
+benchmark_ticker: "^CRSLDX"
+start_date: "2023-01-01"
+end_date: "2026-09-30"
+interval: "1d"
+annualization_factor: 252
+minimum_observations: 180
+validation_fraction: 0.25
+
+universe:
+  constituents_csv: "data/raw/nifty500_constituents.csv"
+  ticker_column: "ticker"
+  name_column: "company_name"
+  market_cap_column: "market_cap"
+  top_n: 50
+  bottom_n: 50
+  auto_enrich_market_cap: true
+  metadata_workers: 12
+
+risk_free:
+  annual_rate: 0.065
+  source_note: "Prototype constant. Replace with dated Indian T-bill/G-Sec series for formal research."
+
+capm:
+  market_return_method: "annualized_mean"
+  positive_alpha_threshold: 0.0
+
+portfolio:
+  max_weight: 0.20
+  candidate_count: 10
+  core_count: 5
+  diversifier_count: 5
+  minimum_core_weight: 0.10
+  optimizer_restarts: 8
+  transaction_cost_bps: 10
+
+factor_scoring:
+  weights:
+    pe_ratio: 0.15
+    pb_ratio: 0.10
+    ebit: 0.20
+    market_cap: 0.10
+    volatility: 0.15
+    news_sentiment: 0.15
+    avg_volume: 0.15
+  sentiment_csv: "data/raw/news_sentiment.csv"
+
+validation:
+  factor_csv: "data/raw/india_factors.csv"
+  factor_required: false
+  benchmark_for_backtest: "^CRSLDX"
+  min_test_observations: 40
+
+agentic:
+  use_llm: false
+  model: "gpt-5-mini"
+  max_reoptimization_loops: 2
+  risk_limits:
+    max_single_weight: 0.20
+    max_top3_concentration: 0.50
+    max_avg_pairwise_correlation: 0.75
+    max_annualized_volatility: 0.45
+    max_drawdown_abs: 0.45
