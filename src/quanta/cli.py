@@ -39,7 +39,91 @@ def phase2(config: str="config/research.yaml"):
     configure_logging(); cfg=load_config(config); p1=run_phase01(cfg,provider()); p2=run_phase02(cfg,p1); _summary(p2); console.print(f"[green]Phase 2 complete[/green] -> {p2['run_dir']}")
 
 @app.command()
-def phase3(config: str="config/research.yaml", request: str="Build and validate a moderate-risk research portfolio"):
-    configure_logging(); cfg=load_config(config); p1=run_phase01(cfg,provider()); p2=run_phase02(cfg,p1); result=run_phase03(cfg,p2,request); _summary(result["phase2"]); console.print(f"[green]Phase 3 complete: {result.get('final_status')}[/green]"); console.print(f"Report: {result.get('report_path')}")
+def phase3(
+    config: str = "config/research.yaml",
+    request: str = (
+        "Build and validate a moderate-risk "
+        "research portfolio"
+    ),
+):
+    configure_logging()
 
+    cfg = load_config(config)
+
+    p1 = run_phase01(
+        cfg,
+        provider(),
+    )
+
+    p2 = run_phase02(
+        cfg,
+        p1,
+    )
+
+    p3 = run_phase03(
+        cfg,
+        p2,
+        request,
+    )
+
+    final_phase2 = (
+        p3.get("phase2_final")
+        or p2
+    )
+
+    _summary(
+        final_phase2
+    )
+
+    console.print(
+        "\n[bold]QUANTA Research Verdict[/bold]"
+    )
+
+    console.print(
+        "Validation:",
+        p3.get(
+            "verdict",
+            {},
+        ).get(
+            "validation_status",
+            "UNKNOWN",
+        ),
+    )
+
+    console.print(
+        "Performance:",
+        p3.get(
+            "verdict",
+            {},
+        ).get(
+            "performance_status",
+            "UNKNOWN",
+        ),
+    )
+
+    console.print(
+        "Walk-forward:",
+        p3.get(
+            "verdict",
+            {},
+        ).get(
+            "walk_forward_status",
+            "UNKNOWN",
+        ),
+    )
+
+    console.print(
+        "\n[green]Phase 3.4 complete[/green]:",
+        p3.get(
+            "final_status",
+            "UNKNOWN",
+        ),
+    )
+
+    console.print(
+        "Report:",
+        p3.get(
+            "report_path",
+        ),
+    )
 if __name__=="__main__": app()

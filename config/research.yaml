@@ -20,7 +20,10 @@ universe:
 
 risk_free:
   annual_rate: 0.065
-  source_note: "Prototype constant. Replace with dated Indian T-bill/G-Sec series for formal research."
+  series_csv: "data/raw/india_risk_free.csv"
+  date_column: "date"
+  rate_column: "annual_rate"
+  fallback_to_static: true
 
 capm:
   market_return_method: "annualized_mean"
@@ -31,8 +34,8 @@ portfolio:
   candidate_count: 10
   core_count: 5
   diversifier_count: 5
-  minimum_core_weight: 0.10
-  optimizer_restarts: 8
+  minimum_core_weight: 0.05
+  optimizer_restarts: 12
   transaction_cost_bps: 10
 
 factor_scoring:
@@ -44,21 +47,30 @@ factor_scoring:
     volatility: 0.15
     news_sentiment: 0.15
     avg_volume: 0.15
+
   sentiment_csv: "data/raw/news_sentiment.csv"
 
 validation:
   factor_csv: "data/raw/india_factors.csv"
   factor_required: false
-  benchmark_for_backtest: "^CRSLDX"
+  benchmark_ticker: "^CRSLDX"
   min_test_observations: 40
+
+  walk_forward:
+    enabled: true
+    train_days: 504
+    test_days: 63
+    step_days: 63
+    minimum_windows: 2
 
 agentic:
   use_llm: false
   model: "gpt-5-mini"
-  max_reoptimization_loops: 2
-  risk_limits:
-    max_single_weight: 0.20
-    max_top3_concentration: 0.50
-    max_avg_pairwise_correlation: 0.75
-    max_annualized_volatility: 0.45
-    max_drawdown_abs: 0.45
+  max_reoptimization_loops: 3
+
+risk_limits:
+  max_single_weight: 0.20
+  max_top3_concentration: 0.50
+  max_avg_pairwise_correlation: 0.75
+  max_annualized_volatility: 0.45
+  max_drawdown_abs: 0.45
