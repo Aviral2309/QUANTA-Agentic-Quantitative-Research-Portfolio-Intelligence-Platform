@@ -21,12 +21,35 @@ class UniverseConfig(BaseModel):
 
 
 class RiskFreeConfig(BaseModel):
+    """
+    Risk-free rate configuration.
+
+    Supports both:
+    1. Static fallback risk-free rate used by Phase 1/2
+    2. Dated risk-free series introduced in Phase 3.3
+    """
+
+    # Existing QUANTA fallback rate
     annual_rate: float = 0.065
 
-    series_csv: str | None = None
+    # Preserve compatibility with Phase 1 reporting
+    source_note: str = (
+        "Static fallback risk-free rate. "
+        "Replace with a dated Indian 91-day "
+        "T-bill/G-Sec observation for formal research."
+    )
+
+    # Phase 3.3 dated risk-free dataset
+    series_csv: str | None = (
+        "data/raw/india_risk_free.csv"
+    )
+
     date_column: str = "date"
+
     rate_column: str = "annual_rate"
 
+    # If the CSV is unavailable or contains no suitable
+    # observation, QUANTA may fall back to annual_rate.
     fallback_to_static: bool = True
 
 

@@ -20,9 +20,17 @@ universe:
 
 risk_free:
   annual_rate: 0.065
+
+  source_note: >
+    Static fallback risk-free rate.
+    Replace with a dated Indian 91-day T-bill/G-Sec
+    observation for formal research.
+
   series_csv: "data/raw/india_risk_free.csv"
+
   date_column: "date"
   rate_column: "annual_rate"
+
   fallback_to_static: true
 
 capm:

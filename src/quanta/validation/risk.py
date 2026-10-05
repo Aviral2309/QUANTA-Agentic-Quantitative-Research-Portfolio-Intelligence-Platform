@@ -29,15 +29,16 @@ class RiskReview(BaseModel):
     """
     Complete QUANTA portfolio-risk review.
 
-    A Pydantic model is intentionally used instead of a plain
-    dictionary so existing QUANTA code can access:
+    Supports both:
 
         review.status
-        review.findings
 
-    while serialization remains straightforward via:
+    and:
 
-        review.model_dump()
+        review.get("status")
+
+    so it remains compatible with the original tests
+    and the Phase 3 LangGraph harness.
     """
 
     status: str
@@ -53,6 +54,49 @@ class RiskReview(BaseModel):
     annualized_volatility: float | None = None
 
     positions: int = 0
+
+    def get(
+        self,
+        key: str,
+        default=None,
+    ):
+        """
+        Dictionary-style .get() compatibility.
+
+        Example:
+            review.get("status")
+        """
+
+        return getattr(
+            self,
+            key,
+            default,
+        )
+
+    def __getitem__(
+        self,
+        key: str,
+    ):
+        """
+        Dictionary-style [] compatibility.
+
+        Example:
+            review["status"]
+        """
+
+        return getattr(
+            self,
+            key,
+        )
+
+    def to_dict(
+        self,
+    ) -> dict:
+        """
+        Explicit dictionary conversion helper.
+        """
+
+        return self.model_dump()
 
 
 # ============================================================
