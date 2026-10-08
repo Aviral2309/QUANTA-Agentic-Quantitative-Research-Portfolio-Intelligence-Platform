@@ -35,17 +35,24 @@ def run_phase35(cfg, phase2: dict) -> dict:
     else:
         raw=getattr(getattr(cfg,'agentic',None),'risk_limits',{}) or {}
         top3=float(raw.get('max_top3_concentration',raw.get('max_top3_weight',.50)))
-    candidates=optimize_robust(train[assets],cfg.risk_free.annual_rate,cfg.annualization_factor,
+    # Train model candidates ONLY on inner training; validate on a later slice.
+    cut=max(60,int(len(train)*.80)); inner_tr=train[assets].iloc[:cut]; inner_val=train[assets].iloc[cut:]
+    candidates=optimize_robust(inner_tr,cfg.risk_free.annual_rate,cfg.annualization_factor,
         cfg.portfolio.max_weight,top3,
         getattr(p35,'return_shrinkage',.60) if p35 else .60,getattr(p35,'covariance_shrinkage',.25) if p35 else .25,
         getattr(p35,'l2_penalty',.02) if p35 else .02,0.0,cfg.portfolio.optimizer_restarts)
     # choose candidate using an inner chronological validation slice from TRAIN only
-    cut=max(60,int(len(train)*.80)); inner_tr=train[assets].iloc[:cut]; inner_val=train[assets].iloc[cut:]
     rescored=[]
     for c in candidates:
         w=pd.Series(c.weights).reindex(inner_val.columns).fillna(0); r=inner_val.dot(w)
         rescored.append((sharpe(r,cfg.risk_free.annual_rate,cfg.annualization_factor),c))
-    chosen=max(rescored,key=lambda z:z[0])[1]
+    chosen_name=max(rescored,key=lambda z:z[0] if pd.notna(z[0]) else float('-inf'))[1].name
+    # Refit the selected MODEL FAMILY using all training observations; never touch test.
+    refitted=optimize_robust(train[assets],cfg.risk_free.annual_rate,cfg.annualization_factor,
+        cfg.portfolio.max_weight,top3,
+        getattr(p35,'return_shrinkage',.60) if p35 else .60,getattr(p35,'covariance_shrinkage',.25) if p35 else .25,
+        getattr(p35,'l2_penalty',.02) if p35 else .02,0.0,cfg.portfolio.optimizer_restarts)
+    chosen=next(c for c in refitted if c.name==chosen_name)
     w=pd.Series(chosen.weights).reindex(test.columns).fillna(0); pr=test.dot(w); turnover=float(w.abs().sum()); cost=turnover*cfg.portfolio.transaction_cost_bps/10000
     if len(pr): pr.iloc[0]-=cost
     br=test[cfg.benchmark_ticker].reindex(pr.index).dropna() if cfg.benchmark_ticker in test else pd.Series(dtype=float)
@@ -62,7 +69,13 @@ def run_phase35(cfg, phase2: dict) -> dict:
         getattr(getattr(cfg.validation,'walk_forward',None),'train_days',504),getattr(getattr(cfg.validation,'walk_forward',None),'test_days',63),
         getattr(getattr(cfg.validation,'walk_forward',None),'step_days',63),cfg.portfolio.max_weight,top3,cfg.portfolio.transaction_cost_bps)
     evidence=evidence_verdict(metrics,boot,integrity.status,wf)
-    result={'status':'COMPLETED','integrity':integrity.model_dump(),'selected_model':chosen.name,'weights':chosen.weights,'metrics':metrics,'bootstrap':boot,
+    # Fixed final assets were selected upstream, possibly with future information.
+    # Do not advertise this run as historically investable or PIT-validated.
+    evidence={'signal':'INSUFFICIENT_EVIDENCE','score':0,
+        'observed_performance':'UNDERPERFORMED' if metrics.get('excess_cagr',0)<0 else 'UNVERIFIED',
+        'reasons':['Final asset selection is not independently reconstructed as-of each historical date.',
+                   *evidence.get('reasons',[])]}
+    result={'status':'COMPLETED','integrity':integrity.model_dump(),'research_readiness':'NOT_VERIFIED','walk_forward_scope':'FIXED_ASSET_UNIVERSE_ONLY','selected_model':chosen.name,'weights':chosen.weights,'metrics':metrics,'bootstrap':boot,
             'walk_forward':{k:v for k,v in wf.items() if k!='returns'},'evidence':evidence}
     _dump(out/'phase35_integrity.json',integrity); _dump(out/'phase35_result.json',result)
     pd.DataFrame({'portfolio_return':pr}).to_csv(out/'phase35_test_returns.csv')

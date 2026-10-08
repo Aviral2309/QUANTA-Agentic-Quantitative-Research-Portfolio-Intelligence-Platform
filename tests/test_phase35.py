@@ -20,5 +20,5 @@ def test_robust_optimizer_constraints():
 
 def test_bootstrap_and_evidence():
     r=sample(k=1)['S0']; b=block_bootstrap_ci(r,samples=100); assert b['status']=='COMPLETED'
-    v=evidence_verdict({'excess_cagr':.02,'information_ratio':.3,'sharpe_ratio':.7,'max_drawdown':-.1},b,'PASS',{'status':'COMPLETED','profitable_window_ratio':.7,'positive_sharpe_window_ratio':.7})
+    v=evidence_verdict({'cagr':.04,'excess_cagr':.02,'information_ratio':.3,'sharpe_ratio':.7,'max_drawdown':-.1},b,'PASS',{'status':'COMPLETED','profitable_window_ratio':.7,'positive_sharpe_window_ratio':.7})
     assert v['signal'] in {'STRONG','MODERATE','WEAK','AVOID'}

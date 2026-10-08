@@ -20,12 +20,12 @@ def validate_research_inputs(prices: pd.DataFrame, train: pd.DataFrame, test: pd
     checks['price_duplicates']=not prices.index.duplicated().any()
     checks['minimum_test_rows']=len(test)>=40
     checks['risk_free_dated']=bool(rf_metadata and rf_metadata.get('observation_date'))
-    checks['pit_constituents']=bool(pit_constituents_csv and Path(pit_constituents_csv).exists())
-    checks['pit_fundamentals']=bool(pit_fundamentals_csv and Path(pit_fundamentals_csv).exists())
+    checks['pit_constituents']=False  # File existence alone cannot establish point-in-time provenance
+    checks['pit_fundamentals']=False  # Requires schema, publication-date and as-of validation
     if not checks['risk_free_dated']: warnings.append('Risk-free rate is not backed by a dated observation; static fallback is research-only.')
     if not checks['pit_constituents']: warnings.append('Historical point-in-time constituent membership unavailable; survivorship bias remains.')
     if not checks['pit_fundamentals']: warnings.append('Point-in-time fundamentals unavailable; do not claim leakage-free historical factor selection.')
     hard=['chronological_split','benchmark_present','price_duplicates','minimum_test_rows']
     if strict_point_in_time: hard += ['risk_free_dated','pit_constituents','pit_fundamentals']
-    status='PASS' if all(checks[k] for k in hard) else 'REJECT'
+    status=('REJECT' if not all(checks[k] for k in hard) else ('PASS' if all(checks.values()) else 'PASS_WITH_LIMITATIONS'))
     return IntegrityReport(status,checks,warnings)

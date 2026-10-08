@@ -8,6 +8,7 @@ from quanta.validation.advanced_metrics import cagr, sharpe, max_drawdown, annua
 def walk_forward_robust(returns: pd.DataFrame, assets: list[str], rf: float, periods: int=252,
                         train_days: int=504, test_days: int=63, step_days: int=63,
                         max_weight: float=.20, top3_limit: float=.50, transaction_cost_bps: float=10.0) -> dict:
+    if step_days < test_days: raise ValueError('Overlapping test windows are not supported')
     x=returns[[a for a in assets if a in returns.columns]].dropna()
     windows=[]; realized=[]; prev=None
     for start in range(0,max(0,len(x)-train_days-test_days+1),step_days):
